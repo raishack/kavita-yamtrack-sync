@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "kavita_url": "https://libros.example.org",
+  "state_file": "/yamtrack/db/kavita-yamtrack-sync/state.json",
+  "review_file": "/yamtrack/db/kavita-yamtrack-sync/review.json",
+  "timeout_seconds": 20,
+  "allow_regress": false,
+  "auto_match_min_score": 95,
+  "review_match_min_score": 80,
+  "auto_match_min_margin": 8,
+  "preferred_publishers": [
+    "Norma"
+  ],
+  "hardcover_enabled": true,
+  "manual_fallback_after_cycles": 3,
+  "manual_reconcile_hours": 24,
+  "allowed_kavita_versions": [
+    "0.9.0.2",
+    "0.9.1.4"
+  ],
+  "allowed_yamtrack_versions": [
+    "0.26.1",
+    "0.26.3"
+  ],
+  "accounts": [
+    {
+      "yamtrack_username": "reader",
+      "kavita_api_key_file": "/run/secrets/kavita-reader-api-key",
+      "overrides": {}
+    }
+  ],
+  "metadata_cache_seconds": 3600,
+  "stale_after_seconds": 3600
+}

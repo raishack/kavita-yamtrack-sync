@@ -1,0 +1,10 @@
+# Place this handler before Yamtrack's catch-all reverse_proxy.
+handle /kavita-sync/* {
+    reverse_proxy yamtrack-kavita-review:8099 {
+        header_up Host {host}
+        header_up X-Forwarded-Host {host}
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-For {remote_host}
+    }
+}
+

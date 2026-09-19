@@ -1,0 +1,11 @@
+[Unit]
+Description=Synchronize Kavita reading progress into Yamtrack
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/yamtrack
+ExecStart=/usr/bin/docker exec yamtrack python manage.py sync_kavita --config /run/kavita-yamtrack-sync/config.json --apply
+User=root
+Group=root

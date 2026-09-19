@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Kavita to Yamtrack sync five minutes after the previous run
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=5min
+RandomizedDelaySec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

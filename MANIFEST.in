@@ -1,0 +1,4 @@
+include LICENSE NOTICE README.md SECURITY.md CHANGELOG.md
+recursive-include docs *.md
+recursive-include deploy *.py *.sh *.json *.yml *.service *.timer *.snippet
+recursive-include tests *.py

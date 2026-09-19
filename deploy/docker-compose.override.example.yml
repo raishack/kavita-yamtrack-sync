@@ -1,0 +1,51 @@
+services:
+  yamtrack:
+    image: ${YAMTRACK_VALIDATED_IMAGE:?Set an immutable tested Yamtrack image digest}
+    volumes:
+      - ./kavita-yamtrack-sync/src/kavita_yamtrack_sync:/yamtrack/kavita_yamtrack_sync:ro
+      - ./kavita-yamtrack-sync/deploy/django_management:/yamtrack/app/management:ro
+      - ./kavita-yamtrack-sync/config.json:/run/kavita-yamtrack-sync/config.json:ro
+      - ./kavita-yamtrack-sync/secrets/kavita-reader-api-key:/run/secrets/kavita-reader-api-key:ro
+
+  yamtrack-kavita-review:
+    container_name: yamtrack-kavita-review
+    image: ${YAMTRACK_VALIDATED_IMAGE:?Set the same tested digest as yamtrack}
+    restart: unless-stopped
+    depends_on:
+      - redis
+    # Same settings/SECRET/database as the main Yamtrack service. Never commit .env.
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379
+      KAVITA_SYNC_CONFIG: /run/kavita-yamtrack-sync/config.json
+    command:
+      - /yamtrack/.venv/bin/gunicorn
+      - --chdir
+      - /yamtrack
+      - --bind
+      - 0.0.0.0:8099
+      - --workers
+      - "2"
+      - --threads
+      - "2"
+      - --timeout
+      - "30"
+      - kavita_yamtrack_sync.review_wsgi:application
+    volumes:
+      - ./db:/yamtrack/db
+      - ./kavita-yamtrack-sync/src/kavita_yamtrack_sync:/yamtrack/kavita_yamtrack_sync:ro
+      - ./kavita-yamtrack-sync/config.json:/run/kavita-yamtrack-sync/config.json:ro
+    networks:
+      - default
+      - caddy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/kavita-sync/health/', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  caddy:
+    external: true
+    name: caddy_default

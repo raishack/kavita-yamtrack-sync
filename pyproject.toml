@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kavita-yamtrack-sync"
+version = "0.2.1"
+description = "One-way, fail-closed Kavita reading progress sync for Yamtrack"
+requires-python = ">=3.12"
+license = "AGPL-3.0-only"
+readme = "README.md"
+
+[project.urls]
+Repository = "https://github.com/raishack/kavita-yamtrack-sync"
+Issues = "https://github.com/raishack/kavita-yamtrack-sync/issues"
+
+[tool.setuptools.package-data]
+kavita_yamtrack_sync = ["review.html"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/integration/sync_test_settings.py" = ["F403"]
+"tests/integration/run.py" = ["E402"]

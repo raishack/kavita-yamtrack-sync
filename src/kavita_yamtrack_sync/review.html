@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Revisión Kavita · Yamtrack</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#0f1117; --panel:#181b24; --line:#303545; --text:#f5f6fa; --muted:#a8afc1; --brand:#8b5cf6; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,sans-serif; }
+    main { max-width:1050px; margin:auto; padding:28px 18px 60px; }
+    header { display:flex; justify-content:space-between; gap:20px; align-items:center; margin-bottom:24px; }
+    h1,h2,p { margin-top:0; } h1 { font-size:clamp(24px,4vw,36px); margin-bottom:4px; }
+    a { color:#c4b5fd; } .muted { color:var(--muted); }
+    .stats { display:flex; gap:10px; flex-wrap:wrap; }
+    .pill { padding:7px 11px; border:1px solid var(--line); border-radius:999px; background:var(--panel); }
+    .notice { padding:12px 14px; margin:12px 0; border-radius:10px; border:1px solid var(--line); background:var(--panel); }
+    .success { border-color:var(--ok); } .error { border-color:var(--danger); }
+    .card { border:1px solid var(--line); border-radius:16px; padding:18px; background:var(--panel); margin:16px 0; box-shadow:0 10px 32px #0002; }
+    .card-head { display:flex; justify-content:space-between; gap:12px; align-items:start; }
+    .badge { font-size:12px; text-transform:uppercase; letter-spacing:.06em; padding:4px 8px; border-radius:999px; background:#312e81; }
+    .ignored .badge { background:#4b5563; }
+    .meta { color:var(--muted); overflow-wrap:anywhere; }
+    .candidate { display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:start; padding:13px; margin:10px 0; border:1px solid var(--line); border-radius:12px; }
+    .score { font-size:18px; font-weight:700; color:#c4b5fd; }
+    button,input { font:inherit; }
+    button { border:0; border-radius:9px; padding:9px 13px; cursor:pointer; color:white; background:var(--brand); font-weight:650; }
+    button.secondary { background:#374151; } button.danger { background:#991b1b; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px; }
+    .manual { display:flex; gap:8px; flex:1; min-width:260px; }
+    button:focus-visible,input:focus-visible,a:focus-visible { outline:3px solid #ddd6fe; outline-offset:3px; }
+    input[type=text] { width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--text); }
+    .empty { text-align:center; padding:52px 20px; border:1px dashed var(--line); border-radius:16px; color:var(--muted); }
+    @media (max-width:650px) { header,.card-head { display:block; } .stats { margin-top:12px; } .candidate { grid-template-columns:auto 1fr; } .score { grid-column:2; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Revisión Kavita</h1><div class="muted">Emparejamientos pendientes para {{ request.user.username }}</div></div>
+    <div class="stats"><span class="pill">{{ pending_count }} pendiente{{ pending_count|pluralize }}</span><span class="pill">{{ ignored_count }} ignorado{{ ignored_count|pluralize }}</span><a class="pill" href="/">Volver a Yamtrack</a></div>
+  </header>
+
+  {% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}
+
+  <section class="card" aria-label="Estado de sincronización">
+    <h2>Sincronización de lecturas</h2>
+    {% if not sync.configured %}
+      <p>Tu cuenta aún no está conectada a Kavita. Solicita al administrador que configure la vinculación.</p>
+    {% else %}
+      <p><strong>{% if sync.healthy %}Sincronización al día{% elif sync.status == 'running' and not sync.global_failed %}Sincronizando{% else %}Sincronización pendiente o con incidencias{% endif %}</strong></p>
+      <div class="stats">
+        <span class="pill">Último ciclo correcto: {% if sync.last_success %}{{ sync.last_success|date:"d/m/Y H:i T" }}{% else %}sin confirmar{% endif %}</span>
+        <span class="pill">{{ sync.manual }} fichas provisionales</span>
+        {% if sync.duration != None %}<span class="pill">Duración: {{ sync.duration }} s</span>{% endif %}
+      </div>
+      {% if sync.global_failed %}<p class="notice error">El último ciclo no pudo completarse. Los datos anteriores se conservan; el administrador puede consultar el estado del servicio.</p>{% endif %}
+      {% for error in sync.errors %}<p class="notice error">{% if error.chapter_id %}Capítulo {{ error.chapter_id }}: {% endif %}{{ error.message }}</p>{% endfor %}
+      <p class="muted">Las aprobaciones se aplican en el siguiente ciclo automático. Esta página muestra tu cuenta; una cola vacía no garantiza que la sincronización esté al día.</p>
+    {% endif %}
+  </section>
+
+  {% if not chapters %}
+    <div class="empty"><h2>Sin revisiones pendientes</h2><p>No hay libros ni mangas que necesiten revisión manual.</p></div>
+  {% endif %}
+
+  {% for item in chapters %}
+  <section class="card {% if item.status == 'ignored' %}ignored{% endif %}">
+    <div class="card-head">
+      <div>
+        <h2>{{ item.signature.title|default:"Sin título" }}</h2>
+        <div class="meta">{{ item.signature.file_name }}</div>
+        <div class="meta">Capítulo {{ item.chapter_id }} · {{ item.signature.pages|default:0 }} páginas{% if item.signature.volume_number %} · tomo {{ item.signature.volume_number }}{% endif %}</div>
+      </div>
+      <span class="badge">{{ item.status_label|default:"En revisión" }}</span>
+    </div>
+
+    {% if item.status == 'ignored' %}
+      <form method="post" action="/kavita-sync/{{ item.chapter_id }}/reconsider/" class="actions">{% csrf_token %}<button class="secondary">Volver a buscar</button></form>
+    {% else %}
+      <form method="post" action="/kavita-sync/{{ item.chapter_id }}/approve/">{% csrf_token %}
+        {% for candidate in item.candidates %}
+        <label class="candidate">
+          <input type="radio" name="candidate" value="{{ candidate.source }}|{{ candidate.media_id }}" {% if forloop.first %}checked{% endif %} required>
+          <span><strong>{{ candidate.title }}</strong><br><span class="meta">{{ candidate.source }} · {{ candidate.publishers|join:", " }} · {{ candidate.pages }} páginas · <a href="{{ candidate.url }}" target="_blank" rel="noopener">{{ candidate.media_id }}</a></span></span>
+          <span class="score">{{ candidate.score }}</span>
+        </label>
+        {% empty %}<p class="muted">Los proveedores no han propuesto ninguna edición.</p>{% endfor %}
+        {% if item.candidates %}<div class="actions"><button>Aprobar seleccionada</button></div>{% endif %}
+      </form>
+
+      <div class="actions">
+        <form method="post" action="/kavita-sync/{{ item.chapter_id }}/manual/" class="manual">{% csrf_token %}<input type="text" name="media_id" aria-label="ID de otra edición de Open Library" placeholder="Otra edición, por ejemplo OL123M" pattern="OL[0-9]+M" required><button class="secondary">Usar edición</button></form>
+        <form method="post" action="/kavita-sync/{{ item.chapter_id }}/ignore/">{% csrf_token %}<button class="danger">Ignorar</button></form>
+        <form method="post" action="/kavita-sync/{{ item.chapter_id }}/reconsider/">{% csrf_token %}<button class="secondary">Buscar de nuevo</button></form>
+      </div>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  <p class="muted">Las fichas provisionales permiten conservar el progreso mientras se busca una edición. Este panel sirve para revisar las excepciones.</p>
+</main>
+</body>
+</html>
