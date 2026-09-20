@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "kavita_url": "https://libros.example.org",
+  "kavita_url": "https://kavita.example.org",
   "state_file": "/yamtrack/db/kavita-yamtrack-sync/state.json",
   "review_file": "/yamtrack/db/kavita-yamtrack-sync/review.json",
   "timeout_seconds": 20,
@@ -8,9 +8,7 @@
   "auto_match_min_score": 95,
   "review_match_min_score": 80,
   "auto_match_min_margin": 8,
-  "preferred_publishers": [
-    "Norma"
-  ],
+  "preferred_publishers": [],
   "hardcover_enabled": true,
   "manual_fallback_after_cycles": 3,
   "manual_reconcile_hours": 24,

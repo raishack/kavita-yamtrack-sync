@@ -1,11 +1,11 @@
-# Seguridad y privacidad
+# Security and privacy
 
-No publiques claves, configuración de producción, bases, estado, colas, títulos leídos ni logs sin revisar. La clave de cada lector reside en archivo privado; nunca en argumentos, URLs o Git. Las peticiones autenticadas no siguen redirecciones. Usa HTTPS o una red privada controlada si aplicas la excepción HTTP explícita.
+Never publish API keys, production configuration, databases, state, review queues, reading titles, or unreviewed logs. Each reader's Kavita key lives in a private file—never in command arguments, URLs, or Git. Authenticated requests do not follow redirects. Use HTTPS, or a controlled private network only when explicitly enabling the private-IP HTTP exception.
 
-El conector escribe mediante el ORM de Yamtrack, no mediante SQL directo. Necesita acceso de escritura a la base y al estado para aplicar cambios. El panel comparte la sesión y el secreto de Yamtrack; no expongas directamente su puerto. No desactives CSRF ni uses permisos globales para resolver errores.
+The connector writes through Yamtrack's ORM, not direct SQL. Applying changes requires write access to the database and state directory. The review panel shares Yamtrack's session and secret; never expose its port directly. Do not disable CSRF or grant broad permissions to work around errors.
 
-Los catálogos externos reciben consultas bibliográficas; revisa sus políticas antes de habilitar matching en bibliotecas sensibles. El archivo de estado puede revelar hábitos y nombres de usuario aunque no contenga claves.
+External catalogs receive bibliographic queries. Review their policies before enabling matching for sensitive libraries. The state file may reveal reading habits and usernames even though it contains no API keys.
 
-Para vulnerabilidades, usa el canal privado **Report a vulnerability** de GitHub si está habilitado. No abras incidencias públicas con datos explotables o secretos; si el canal no está disponible, solicita un contacto privado sin detallar la vulnerabilidad.
+For vulnerabilities, use GitHub's private **Report a vulnerability** channel when available. Do not open a public issue containing exploitable details or secrets. If private reporting is unavailable, request a private contact without disclosing the vulnerability itself.
 
-La compatibilidad se limita a las versiones documentadas. Cualquier actualización de Yamtrack/Kavita requiere revalidación y copias coherentes.
+Compatibility is limited to the documented versions. Every Yamtrack or Kavita upgrade requires revalidation and consistent backups.

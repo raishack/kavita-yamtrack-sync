@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Revisión Kavita · Yamtrack</title>
+  <title>Kavita Review · Yamtrack</title>
   <style>
     :root { color-scheme: light dark; --bg:#0f1117; --panel:#181b24; --line:#303545; --text:#f5f6fa; --muted:#a8afc1; --brand:#8b5cf6; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; }
     * { box-sizing:border-box; }
@@ -37,68 +37,68 @@
 <body>
 <main>
   <header>
-    <div><h1>Revisión Kavita</h1><div class="muted">Emparejamientos pendientes para {{ request.user.username }}</div></div>
-    <div class="stats"><span class="pill">{{ pending_count }} pendiente{{ pending_count|pluralize }}</span><span class="pill">{{ ignored_count }} ignorado{{ ignored_count|pluralize }}</span><a class="pill" href="/">Volver a Yamtrack</a></div>
+    <div><h1>Kavita Review</h1><div class="muted">Pending matches for {{ request.user.username }}</div></div>
+    <div class="stats"><span class="pill">{{ pending_count }} pending</span><span class="pill">{{ ignored_count }} ignored</span><a class="pill" href="/">Back to Yamtrack</a></div>
   </header>
 
   {% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}
 
-  <section class="card" aria-label="Estado de sincronización">
-    <h2>Sincronización de lecturas</h2>
+  <section class="card" aria-label="Synchronization status">
+    <h2>Reading synchronization</h2>
     {% if not sync.configured %}
-      <p>Tu cuenta aún no está conectada a Kavita. Solicita al administrador que configure la vinculación.</p>
+      <p>Your account is not connected to Kavita yet. Ask the administrator to configure the link.</p>
     {% else %}
-      <p><strong>{% if sync.healthy %}Sincronización al día{% elif sync.status == 'running' and not sync.global_failed %}Sincronizando{% else %}Sincronización pendiente o con incidencias{% endif %}</strong></p>
+      <p><strong>{% if sync.healthy %}Synchronization is up to date{% elif sync.status == 'running' and not sync.global_failed %}Synchronizing{% else %}Synchronization is pending or degraded{% endif %}</strong></p>
       <div class="stats">
-        <span class="pill">Último ciclo correcto: {% if sync.last_success %}{{ sync.last_success|date:"d/m/Y H:i T" }}{% else %}sin confirmar{% endif %}</span>
-        <span class="pill">{{ sync.manual }} fichas provisionales</span>
-        {% if sync.duration != None %}<span class="pill">Duración: {{ sync.duration }} s</span>{% endif %}
+        <span class="pill">Last successful run: {% if sync.last_success %}{{ sync.last_success|date:"Y-m-d H:i T" }}{% else %}not confirmed{% endif %}</span>
+        <span class="pill">{{ sync.manual }} provisional entries</span>
+        {% if sync.duration != None %}<span class="pill">Duration: {{ sync.duration }} s</span>{% endif %}
       </div>
-      {% if sync.global_failed %}<p class="notice error">El último ciclo no pudo completarse. Los datos anteriores se conservan; el administrador puede consultar el estado del servicio.</p>{% endif %}
-      {% for error in sync.errors %}<p class="notice error">{% if error.chapter_id %}Capítulo {{ error.chapter_id }}: {% endif %}{{ error.message }}</p>{% endfor %}
-      <p class="muted">Las aprobaciones se aplican en el siguiente ciclo automático. Esta página muestra tu cuenta; una cola vacía no garantiza que la sincronización esté al día.</p>
+      {% if sync.global_failed %}<p class="notice error">The latest run could not be completed. Previous data was preserved; the administrator can inspect service status.</p>{% endif %}
+      {% for error in sync.errors %}<p class="notice error">{% if error.chapter_id %}Chapter {{ error.chapter_id }}: {% endif %}{{ error.message }}</p>{% endfor %}
+      <p class="muted">Approvals are applied during the next automatic run. This page shows your account; an empty queue does not guarantee that synchronization is current.</p>
     {% endif %}
   </section>
 
   {% if not chapters %}
-    <div class="empty"><h2>Sin revisiones pendientes</h2><p>No hay libros ni mangas que necesiten revisión manual.</p></div>
+    <div class="empty"><h2>No pending reviews</h2><p>No books or manga require manual review.</p></div>
   {% endif %}
 
   {% for item in chapters %}
   <section class="card {% if item.status == 'ignored' %}ignored{% endif %}">
     <div class="card-head">
       <div>
-        <h2>{{ item.signature.title|default:"Sin título" }}</h2>
+        <h2>{{ item.signature.title|default:"Untitled" }}</h2>
         <div class="meta">{{ item.signature.file_name }}</div>
-        <div class="meta">Capítulo {{ item.chapter_id }} · {{ item.signature.pages|default:0 }} páginas{% if item.signature.volume_number %} · tomo {{ item.signature.volume_number }}{% endif %}</div>
+        <div class="meta">Chapter {{ item.chapter_id }} · {{ item.signature.pages|default:0 }} pages{% if item.signature.volume_number %} · volume {{ item.signature.volume_number }}{% endif %}</div>
       </div>
-      <span class="badge">{{ item.status_label|default:"En revisión" }}</span>
+      <span class="badge">{{ item.status_label|default:"Under review" }}</span>
     </div>
 
     {% if item.status == 'ignored' %}
-      <form method="post" action="/kavita-sync/{{ item.chapter_id }}/reconsider/" class="actions">{% csrf_token %}<button class="secondary">Volver a buscar</button></form>
+      <form method="post" action="/kavita-sync/{{ item.chapter_id }}/reconsider/" class="actions">{% csrf_token %}<button class="secondary">Search again</button></form>
     {% else %}
       <form method="post" action="/kavita-sync/{{ item.chapter_id }}/approve/">{% csrf_token %}
         {% for candidate in item.candidates %}
         <label class="candidate">
           <input type="radio" name="candidate" value="{{ candidate.source }}|{{ candidate.media_id }}" {% if forloop.first %}checked{% endif %} required>
-          <span><strong>{{ candidate.title }}</strong><br><span class="meta">{{ candidate.source }} · {{ candidate.publishers|join:", " }} · {{ candidate.pages }} páginas · <a href="{{ candidate.url }}" target="_blank" rel="noopener">{{ candidate.media_id }}</a></span></span>
+          <span><strong>{{ candidate.title }}</strong><br><span class="meta">{{ candidate.source }} · {{ candidate.publishers|join:", " }} · {{ candidate.pages }} pages · <a href="{{ candidate.url }}" target="_blank" rel="noopener">{{ candidate.media_id }}</a></span></span>
           <span class="score">{{ candidate.score }}</span>
         </label>
-        {% empty %}<p class="muted">Los proveedores no han propuesto ninguna edición.</p>{% endfor %}
-        {% if item.candidates %}<div class="actions"><button>Aprobar seleccionada</button></div>{% endif %}
+        {% empty %}<p class="muted">Providers did not suggest an edition.</p>{% endfor %}
+        {% if item.candidates %}<div class="actions"><button>Approve selected</button></div>{% endif %}
       </form>
 
       <div class="actions">
-        <form method="post" action="/kavita-sync/{{ item.chapter_id }}/manual/" class="manual">{% csrf_token %}<input type="text" name="media_id" aria-label="ID de otra edición de Open Library" placeholder="Otra edición, por ejemplo OL123M" pattern="OL[0-9]+M" required><button class="secondary">Usar edición</button></form>
-        <form method="post" action="/kavita-sync/{{ item.chapter_id }}/ignore/">{% csrf_token %}<button class="danger">Ignorar</button></form>
-        <form method="post" action="/kavita-sync/{{ item.chapter_id }}/reconsider/">{% csrf_token %}<button class="secondary">Buscar de nuevo</button></form>
+        <form method="post" action="/kavita-sync/{{ item.chapter_id }}/manual/" class="manual">{% csrf_token %}<input type="text" name="media_id" aria-label="ID of another Open Library edition" placeholder="Another edition, for example OL123M" pattern="OL[0-9]+M" required><button class="secondary">Use edition</button></form>
+        <form method="post" action="/kavita-sync/{{ item.chapter_id }}/ignore/">{% csrf_token %}<button class="danger">Ignore</button></form>
+        <form method="post" action="/kavita-sync/{{ item.chapter_id }}/reconsider/">{% csrf_token %}<button class="secondary">Search again</button></form>
       </div>
     {% endif %}
   </section>
   {% endfor %}
 
-  <p class="muted">Las fichas provisionales permiten conservar el progreso mientras se busca una edición. Este panel sirve para revisar las excepciones.</p>
+  <p class="muted">Provisional entries preserve progress while the connector searches for an edition. Use this panel to review exceptions.</p>
 </main>
 </body>
 </html>

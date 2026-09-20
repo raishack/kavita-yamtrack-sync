@@ -1,38 +1,38 @@
-# Operación y diagnóstico
+# Operations and troubleshooting
 
-## Estado persistente
+## Persistent state
 
-- `state.json`: identidades, vínculos de fichas, decisiones, caché y reintentos.
-- `review.json`: propuestas pendientes de revisión.
-- `status.json`: último resultado global/por cuenta, duración y códigos de error.
-- `sync.lock`: bloqueo entre comando y panel.
+- `state.json`: identities, entry links, decisions, cache, and retries.
+- `review.json`: proposals awaiting manual review.
+- `status.json`: latest global/per-account result, duration, and error codes.
+- `sync.lock`: shared lock between the command and review panel.
 
-Son archivos privados, normalmente modo 0600. No editarlos con el timer o el panel activos. Los writes del ORM y JSON no forman una transacción distribuida: cada libro se confirma y luego se guarda un punto de avance; la identidad determinista permite reanudar.
+These are private files, normally mode 0600. Do not edit them while the timer or panel is active. ORM and JSON writes are not one distributed transaction: each book is committed and then a checkpoint is persisted. Deterministic identities make interrupted runs resumable.
 
-## Salud
+## Health
 
-`/kavita-sync/health/` es liveness; `/kavita-sync/ready/` devuelve 200 solo tras éxito reciente o 503 cuando está degradado. No uses readiness como política de reinicio en bucle: hay que corregir la causa. Un fallo parcial devuelve salida no cero aunque otros libros se hayan actualizado.
+`/kavita-sync/health/` is a liveness endpoint. `/kavita-sync/ready/` returns 200 only after a recent successful run, or 503 when degraded. Do not use readiness as a restart-loop policy; fix the underlying cause. A partial failure exits nonzero even when other books were updated successfully.
 
-## Problemas frecuentes
+## Common problems
 
-| Síntoma | Qué revisar |
+| Symptom | What to check |
 |---|---|
-| `incompatible_kavita_version` / `incompatible_yamtrack_version` | Bloqueo intencional. Validar la versión y solo después ampliar su lista exacta |
-| Error al leer clave | Archivo, ruta **interna**, propietario y permisos 0600; no imprimir su contenido |
-| HTTP 401/403 | Clave individual, permisos de biblioteca, URL correcta y soporte de autenticación por cabecera |
-| Comando `sync_kavita` ausente | Montaje `/yamtrack/app/management` y paquete en `/yamtrack/kavita_yamtrack_sync` |
-| Panel vuelve al login | Mismo origen, secreto de sesión y base de usuarios; configuración efectiva del panel |
-| Panel rechaza POST | CSRF, cookies y cabeceras HTTPS del proxy; no desactivar la protección |
-| Ficha tarda en aparecer | Solo se importan unidades con progreso; historial diferido + on-deck; revisar cola y contadores |
-| Proveedor no responde | Los errores no equivalen a «sin coincidencias»; reintentos con espera creciente |
-| API devuelve HTML/redirección | URL base canónica: no se siguen redirecciones autenticadas |
-| Nuevo config no se aplica | Un bind mount de archivo puede conservar el inode anterior; recrear los servicios afectados |
-| Progreso parece menor entre ediciones | Comprobar proporción de páginas antes de confundirla con una regresión |
+| `incompatible_kavita_version` / `incompatible_yamtrack_version` | Intentional guard. Validate the exact version before extending the allowlist |
+| API-key read error | File, **container path**, owner, and mode 0600; never print its contents |
+| HTTP 401/403 | Per-user key, library permissions, correct URL, and support for header authentication |
+| Missing `sync_kavita` command | `/yamtrack/app/management` mount and package at `/yamtrack/kavita_yamtrack_sync` |
+| Panel redirects back to login | Same origin, session secret, user database, and effective panel configuration |
+| Panel rejects POST | CSRF, cookies, and HTTPS proxy headers; never disable protection |
+| Entry takes time to appear | Only reading units with progress are imported; delayed history + on-deck; inspect queue and counters |
+| Provider unavailable | Provider errors do not mean “no match”; retries use increasing delays |
+| API returns HTML/redirect | Use the canonical base URL; authenticated redirects are not followed |
+| New config not applied | A bind-mounted file may keep the old inode; recreate affected services |
+| Progress appears lower between editions | Compare proportional page counts before treating it as a regression |
 
-Para volver a consultar propuestas pendientes:
+To query pending proposals again:
 
 ```sh
 docker exec yamtrack python manage.py sync_kavita --config /run/kavita-yamtrack-sync/config.json --refresh-matches
 ```
 
-Sin `--apply` no persiste la búsqueda; añade el flag solo si deseas guardar y aplicar decisiones. No publiques logs sin revisarlos: aunque el conector resume errores, dependencias o herramientas externas podrían incluir datos.
+Without `--apply`, the search is not persisted. Add the flag only when you intend to store and apply decisions. Never publish logs without reviewing them: although the connector summarizes errors, dependencies or external tools may include sensitive data.

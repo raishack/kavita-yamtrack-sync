@@ -1,38 +1,38 @@
-# Configuración
+# Configuration
 
-Parte de [config.example.json](../deploy/config.example.json). El schema es 1. No se incluyen valores reales ni overrides de usuarios.
+Start from [config.example.json](../deploy/config.example.json). The schema version is 1. The example contains no real values or user overrides.
 
-| Campo | Valor recomendado / significado |
+| Field | Recommended value / meaning |
 |---|---|
-| `kavita_url` | HTTPS sin credenciales; solo se permite HTTP para una IP privada explícita no loopback en una red controlada |
-| `state_file` | JSON privado persistente, compartido entre comando y panel |
-| `review_file` | Cola privada; por defecto `review.json` junto al estado |
-| `accounts` | Usuario exacto Yamtrack → archivo de clave del mismo lector de Kavita |
-| `accounts[].overrides` | ID de capítulo Kavita → `{ "source": "openlibrary", "media_id": "OL123456M" }`; ejemplo ficticio, no copiar IDs a ciegas |
-| `allowed_kavita_versions` | Lista exacta validada; ejemplo 0.9.0.2 y 0.9.1.4 |
-| `allowed_yamtrack_versions` | Lista exacta validada; ejemplo 0.26.1 y 0.26.3 |
-| `timeout_seconds` | 20; limitado a 5–120 |
-| `allow_regress` | false; no activar para intentar arreglar una asociación incorrecta |
+| `kavita_url` | HTTPS URL without credentials; HTTP is accepted only for an explicit, non-loopback private IP on a controlled network |
+| `state_file` | Persistent private JSON shared by the command and review panel |
+| `review_file` | Private queue; defaults to `review.json` next to the state file |
+| `accounts` | Exact Yamtrack username → API-key file for the same Kavita reader |
+| `accounts[].overrides` | Kavita chapter ID → `{ "source": "openlibrary", "media_id": "OL123456M" }`; fictional example—never copy IDs blindly |
+| `allowed_kavita_versions` | Exact validated allowlist; example: 0.9.0.2 and 0.9.1.4 |
+| `allowed_yamtrack_versions` | Exact validated allowlist; example: 0.26.1 and 0.26.3 |
+| `timeout_seconds` | 20; constrained to 5–120 |
+| `allow_regress` | false; do not enable it to repair an incorrect match |
 | `auto_match_min_score` | 95 |
 | `review_match_min_score` | 80 |
-| `auto_match_min_margin` | 8 respecto al segundo candidato |
-| `preferred_publishers` | Ejemplo `Norma`; personalizar para tu biblioteca o usar `[]` |
-| `hardcover_enabled` | true; requiere que el proveedor esté configurado en Yamtrack |
-| `manual_fallback_after_cycles` | 3; tras ambigüedad persistente crea ficha manual determinista |
-| `manual_reconcile_hours` | 24; vuelve a buscar una edición canónica para fichas manuales |
-| `metadata_cache_seconds` | 3600; 0 desactiva la caché de detalle |
-| `stale_after_seconds` | 3600; readiness falla sin éxito reciente |
+| `auto_match_min_margin` | 8 points above the second candidate |
+| `preferred_publishers` | Example: `Norma`; customize for your library or use `[]` |
+| `hardcover_enabled` | true; requires the provider to be configured in Yamtrack |
+| `manual_fallback_after_cycles` | 3; persistent ambiguity creates a deterministic manual entry |
+| `manual_reconcile_hours` | 24; retries canonical-edition matching for manual entries |
+| `metadata_cache_seconds` | 3600; 0 disables detail caching |
+| `stale_after_seconds` | 3600; readiness fails when no recent successful run exists |
 
-## Identidad y coincidencias
+## Identity and matching
 
-ISBN, overrides y decisiones del usuario guían el matching. Título, autor, tomo, editorial, idioma y páginas ayudan a distinguir ediciones. Un tomo diferente no debe aceptarse solo por compartir serie. Los identificadores `chapterId` son unidades internas de Kavita: pueden representar libros o partes/tomos, no solo capítulos literarios.
+ISBNs, explicit overrides, and user decisions drive matching. Title, author, volume, publisher, language, and page count help distinguish editions. A different volume must not be accepted merely because it belongs to the same series. Kavita `chapterId` values are internal reading-unit identifiers: they may represent books, parts, or volumes—not only literary chapters.
 
-Si aparecen dos lecturas para la misma edición, se informa del conflicto y se conservan ambas. Una lectura eliminada o reemplazada no se recrea silenciosamente. No borres `state.json` para resolver un error: perderías identidad, decisiones e historial de sincronización.
+If two readings resolve to the same edition, the connector reports a conflict and preserves both. A deleted or replaced reading is not silently recreated. Do not delete `state.json` to fix a matching problem; doing so discards identity, decisions, and synchronization history.
 
-La proporción se convierte a las páginas de la edición Yamtrack; una lectura incompleta nunca debe redondearse al máximo. Una ficha ya completada no se reabre automáticamente.
+Progress is converted proportionally to the Yamtrack edition's page count. An incomplete reading is never rounded up to completion. A completed entry is not reopened automatically.
 
-## Panel
+## Review panel
 
-Cada usuario ve solo su cola. Aprobar seleccionada o usar otra edición guarda una decisión; el siguiente ciclo la aplica. Ignorar permanece hasta un cambio de identidad; buscar de nuevo invalida la decisión de búsqueda. Las escrituras usan POST + CSRF y comparten bloqueo con el comando.
+Each user sees only their own queue. Approving a candidate or selecting another edition stores a decision that is applied by the next synchronization run. Ignore remains effective until identity metadata changes; search again invalidates the current search decision. Writes use POST + CSRF and share the command lock.
 
-Los secretos de proveedores, si son necesarios, se configuran mediante los mecanismos de Yamtrack. No existe una clave global de Kavita que sustituya las claves individuales.
+Provider secrets, when required, use Yamtrack's own configuration mechanisms. There is no global Kavita API key that replaces individual reader keys.

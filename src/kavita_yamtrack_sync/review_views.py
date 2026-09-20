@@ -61,25 +61,25 @@ def readiness(request):
 
 def csrf_failure(request, reason=""):
     return HttpResponseForbidden(
-        "Solicitud rechazada: token CSRF ausente o inválido.", content_type="text/plain"
+        "Request rejected: missing or invalid CSRF token.", content_type="text/plain"
     )
 
 
 def bad_request(request, exception=None):
-    return HttpResponseBadRequest("Solicitud no válida.", content_type="text/plain")
+    return HttpResponseBadRequest("Invalid request.", content_type="text/plain")
 
 
 def permission_denied(request, exception=None):
-    return HttpResponseForbidden("Acceso denegado.", content_type="text/plain")
+    return HttpResponseForbidden("Access denied.", content_type="text/plain")
 
 
 def page_not_found(request, exception=None):
-    return HttpResponseNotFound("Página no encontrada.", content_type="text/plain")
+    return HttpResponseNotFound("Page not found.", content_type="text/plain")
 
 
 def server_error(request):
     return HttpResponseServerError(
-        "Error interno del panel.", content_type="text/plain"
+        "Internal review-panel error.", content_type="text/plain"
     )
 
 
@@ -97,11 +97,11 @@ def index(request):
                 "chapter_id": chapter_id,
                 "status": record.get("status", "review"),
                 "status_label": {
-                    "review": "En revisión",
-                    "unmatched": "Sin coincidencia",
-                    "ignored": "Ignorado",
-                    "identity_changed": "Metadatos cambiados",
-                }.get(record.get("status", "review"), "En revisión"),
+                    "review": "Under review",
+                    "unmatched": "No match",
+                    "ignored": "Ignored",
+                    "identity_changed": "Metadata changed",
+                }.get(record.get("status", "review"), "Under review"),
                 "signature": record.get("signature", {}),
                 "candidates": record.get("candidates", []),
             }
@@ -126,7 +126,7 @@ def approve(request, chapter_id):
             media_id,
             source,
         ),
-        "Candidato aprobado. Yamtrack se actualizará en la próxima sincronización.",
+        "Candidate approved. Yamtrack will be updated during the next sync.",
     )
 
 
@@ -141,13 +141,13 @@ def manual(request, chapter_id):
         # manually typed ID. No user-controlled URL is ever requested.
         edition = OpenLibraryClient().get_edition(media_id)
         if edition is None:
-            raise ReviewError("No existe esa edición en Open Library")
+            raise ReviewError("That edition does not exist in Open Library")
         approve_manual(_config(), request.user.get_username(), chapter_id, media_id)
 
     return _mutation(
         request,
         action,
-        "Edición manual aprobada. Yamtrack se actualizará en la próxima sincronización.",
+        "Manual edition approved. Yamtrack will be updated during the next sync.",
     )
 
 
@@ -158,7 +158,7 @@ def ignore_item(request, chapter_id):
     return _mutation(
         request,
         lambda: ignore(_config(), request.user.get_username(), chapter_id),
-        "Elemento ignorado. No se sincronizará mientras sus metadatos no cambien.",
+        "Item ignored. It will not be synchronized until its metadata changes.",
     )
 
 
@@ -169,7 +169,7 @@ def reconsider_item(request, chapter_id):
     return _mutation(
         request,
         lambda: reconsider(_config(), request.user.get_username(), chapter_id),
-        "La propuesta se volverá a buscar en la próxima sincronización.",
+        "Candidates will be searched again during the next sync.",
     )
 
 

@@ -15,7 +15,7 @@ template = Engine().from_string(
     Path("/audit/src/kavita_yamtrack_sync/review.html").read_text()
 )
 base = {
-    "request": SimpleNamespace(user=SimpleNamespace(username="Lector de prueba")),
+    "request": SimpleNamespace(user=SimpleNamespace(username="Test reader")),
     "messages": [],
     "csrf_token": "offline-ui-fixture",
     "pending_count": 0,
@@ -43,7 +43,7 @@ for name, status in [
             "errors": [
                 {
                     "chapter_id": 42,
-                    "message": "Ya existe otra lectura de esa edición. Ambas fichas se han conservado; hay que revisar la migración.",
+                    "message": "Another reading already exists for this edition. Both entries were preserved; review the migration.",
                 }
             ],
         },
@@ -57,18 +57,18 @@ for name, status in [
                 "chapter_id": 42,
                 "status": "review",
                 "signature": {
-                    "title": "Un libro de prueba para revisar",
-                    "file_name": "Un libro de prueba T03.cbr",
+                    "title": "A test book to review",
+                    "file_name": "A test book V03.cbr",
                     "pages": 200,
                 },
                 "candidates": [
                     {
                         "source": "openlibrary",
                         "media_id": "OL123M",
-                        "title": "Un libro de prueba · Tomo 3",
+                        "title": "A test book · Volume 3",
                         "score": 90,
                         "pages": 200,
-                        "publishers": ["Editorial de prueba"],
+                        "publishers": ["Test Publisher"],
                         "url": "https://openlibrary.org/books/OL123M",
                     }
                 ],

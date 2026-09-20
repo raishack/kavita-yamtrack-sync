@@ -485,7 +485,7 @@ class SyncORMTests(TestCase):
         token = _get_new_csrf_string()
         client.cookies["csrftoken"] = token
         with patch.object(views, "_config", return_value=self.config):
-            self.assertContains(client.get("/kavita-sync/"), "aún no está conectada")
+            self.assertContains(client.get("/kavita-sync/"), "is not connected to Kavita yet")
             response = client.post("/kavita-sync/1/ignore/", HTTP_X_CSRFTOKEN=token)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(load_state(self.config.review_file), review)
@@ -512,7 +512,7 @@ class SyncORMTests(TestCase):
                 },
             )
             response = client.get("/kavita-sync/")
-            self.assertContains(response, "Sincronización al día")
+            self.assertContains(response, "Synchronization is up to date")
             self.assertNotContains(response, "OTHER_PRIVATE")
             if os.environ.get("KAVITA_SYNC_QA_OUTPUT"):
                 Path(

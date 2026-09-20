@@ -33,11 +33,11 @@ def error_code(error):
 
 
 ERROR_LABELS = {
-    "identity_changed_review_required": "Han cambiado los metadatos. Revisa la edición antes de continuar.",
-    "existing_reading_migration_conflict": "Ya existe otra lectura de esa edición. Ambas fichas se han conservado; hay que revisar la migración.",
-    "reading_deleted_or_replaced": "La ficha vinculada fue borrada o sustituida. No se ha recreado ni alterado la nueva lectura.",
-    "unknown_previous_page_scale": "Faltan las páginas de la edición anterior; no se ha convertido el progreso.",
-    "orm_changed_requested_progress": "Yamtrack ha cambiado el progreso solicitado. La escritura se ha revertido.",
+    "identity_changed_review_required": "Metadata changed. Review the edition before continuing.",
+    "existing_reading_migration_conflict": "Another reading already exists for this edition. Both entries were preserved; review the migration.",
+    "reading_deleted_or_replaced": "The linked entry was deleted or replaced. The connector did not recreate it or alter the new reading.",
+    "unknown_previous_page_scale": "The previous edition's page count is missing, so progress was not converted.",
+    "orm_changed_requested_progress": "Yamtrack changed the requested progress. The write was rolled back.",
 }
 
 
@@ -67,7 +67,7 @@ def account_status(config, username):
                 "chapter_id": error.get("chapter_id"),
                 "message": ERROR_LABELS.get(
                     error.get("code"),
-                    "No se pudo consultar o sincronizar este elemento. Se reintentará automáticamente.",
+                    "This item could not be queried or synchronized. It will be retried automatically.",
                 ),
             }
         )

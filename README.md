@@ -2,75 +2,75 @@
 
 [![CI](https://github.com/raishack/kavita-yamtrack-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/raishack/kavita-yamtrack-sync/actions/workflows/ci.yml)
 
-Conector **unidireccional** para trasladar el progreso de libros y tomos de Kavita a Yamtrack. Kavita es la fuente de lectura; el conector no modifica su biblioteca, usuarios ni progreso.
+A **one-way** connector that transfers book and volume reading progress from Kavita to Yamtrack. Kavita remains the reading source; the connector does not modify its library, users, or progress.
 
-**No es una integración oficial de Kavita ni de Yamtrack.** Es una extensión Django que se ejecuta **dentro del entorno de Yamtrack**, mediante su ORM y sus proveedores. No es un programa autónomo ni un importador de archivos EPUB/CBR.
+**This is not an official Kavita or Yamtrack integration.** It is a Django extension that runs **inside the Yamtrack environment**, using its ORM and providers. It is not a standalone program or an EPUB/CBR file importer.
 
-## Funciones
+## Features
 
-- Progreso proporcional entre ediciones, estados en curso/completado y fechas.
-- ISBN, coincidencias por título/autor/tomo y overrides explícitos.
-- Catálogos Open Library y Hardcover mediante los proveedores de Yamtrack.
-- Cola de revisión con panel autenticado: aprobar, ignorar, elegir edición o volver a buscar.
-- Ficha manual provisional tras varios ciclos ambiguos y reconciliación posterior.
-- Varias cuentas con claves Kavita separadas y aislamiento en el panel.
-- Simulación por defecto; escritura únicamente con `--apply`.
-- Bloqueo por versión no validada, transacciones, puntos de avance y exclusión mutua.
-- No elimina fichas ni fusiona lecturas en conflicto; conserva notas, valoración e historial.
-- Timer systemd y endpoints de salud sin información de lecturas.
+- Proportional progress conversion between editions, in-progress/completed states, and dates.
+- ISBN matching, title/author/volume matching, and explicit overrides.
+- Open Library and Hardcover catalogs through Yamtrack providers.
+- Review queue with an authenticated panel: approve, ignore, choose an edition, or search again.
+- Provisional manual entries after repeated ambiguous cycles, followed by later reconciliation.
+- Multiple accounts with separate Kavita API keys and per-user isolation in the panel.
+- Dry-run by default; writes only with `--apply`.
+- Strict version guards, transactions, checkpoints, and mutual exclusion.
+- Never deletes entries or merges conflicting readings; preserves notes, ratings, and history.
+- Optional systemd timer and health endpoints that expose no reading data.
 
 ```mermaid
 flowchart LR
-  K[Kavita: lectura e historial] --> S[Comando sync_kavita]
+  K[Kavita: reading and history] --> S[sync_kavita command]
   C[Open Library / Hardcover] --> S
-  S --> Y[Yamtrack: ORM e historial]
-  S <--> Q[Estado y cola privados]
-  P[Panel con sesión Yamtrack] <--> Q
+  S --> Y[Yamtrack: ORM and history]
+  S <--> Q[Private state and review queue]
+  P[Panel using Yamtrack session] <--> Q
 ```
 
-## Compatibilidad
+## Compatibility
 
-| Componente | Validación conocida |
+| Component | Validated versions/environment |
 |---|---|
-| Kavita | 0.9.0.2 y 0.9.1.4; API real de historial/progreso comprobada |
-| Yamtrack | 0.26.3; 0.26.1 conservada como versión previamente probada |
-| Python | 3.12 o superior, usando las dependencias de la imagen Yamtrack |
-| Despliegue | Linux + Docker Compose; systemd opcional para planificar |
+| Kavita | 0.9.0.2 and 0.9.1.4; real history/progress API verified |
+| Yamtrack | 0.26.3; 0.26.1 retained as a previously tested version |
+| Python | 3.12 or newer, using the dependencies bundled with the Yamtrack image |
+| Deployment | Linux + Docker Compose; optional systemd scheduling |
 
-La plantilla incluye ambas versiones Kavita explícitamente. Los valores predeterminados del código se mantienen conservadores (0.9.0.2): **usa la configuración explícita**. La compatibilidad no se extiende a versiones futuras por similitud de número. Ver [actualizaciones y reversión](docs/UPGRADING.md).
+The example configuration explicitly includes both validated Kavita versions. Code defaults remain conservative (0.9.0.2): **use explicit configuration**. Compatibility does not automatically extend to later versions based on version-number similarity. See [controlled upgrades and rollback](docs/UPGRADING.md).
 
-## Instalación
+## Installation
 
-Empieza por **[Instalación paso a paso](docs/INSTALL.md)**. Requiere acceso de administración al despliegue Yamtrack, una cuenta existente por lector y una clave API individual de Kavita guardada en un archivo privado.
+Start with the **[step-by-step installation guide](docs/INSTALL.md)**. You need administrative access to the Yamtrack deployment, an existing Yamtrack account for each reader, and one individual Kavita API key per reader stored in a private file.
 
-Secuencia: backup → fijar imagen → montar código/configuración → simular → revisar resultados → aplicar → repetir para comprobar idempotencia → habilitar automatización.
+Recommended sequence: back up → pin the image → mount code/configuration → dry-run → review results → apply → repeat to verify idempotency → enable automation.
 
 ```sh
-# Dentro de un despliegue preparado siguiendo la guía:
+# Inside a deployment prepared according to the guide:
 docker exec yamtrack python manage.py sync_kavita --config /run/kavita-yamtrack-sync/config.json
-# Solo después de revisar la simulación:
+# Only after reviewing the dry-run:
 docker exec yamtrack python manage.py sync_kavita --config /run/kavita-yamtrack-sync/config.json --apply
 ```
 
-## Documentación
+## Documentation
 
-- [Instalación, Docker, panel, proxy y systemd](docs/INSTALL.md)
-- [Configuración y política de coincidencias](docs/CONFIGURATION.md)
-- [Operación y diagnóstico](docs/OPERATIONS.md)
-- [Actualizar Kavita/Yamtrack y revertir](docs/UPGRADING.md)
-- [Desarrollo, arquitectura y pruebas](docs/DEVELOPMENT.md)
-- [Seguridad y privacidad](SECURITY.md)
-- [Cambios](CHANGELOG.md)
+- [Installation, Docker, review panel, proxy, and systemd](docs/INSTALL.md)
+- [Configuration and matching policy](docs/CONFIGURATION.md)
+- [Operations and troubleshooting](docs/OPERATIONS.md)
+- [Upgrading Kavita/Yamtrack and rollback](docs/UPGRADING.md)
+- [Development, architecture, and testing](docs/DEVELOPMENT.md)
+- [Security and privacy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
 
-## Límites importantes
+## Important limitations
 
-- No sincroniza marcadores, archivos, colecciones ni notas de Kavita: sincroniza progreso hacia fichas de libros en Yamtrack.
-- No es bidireccional. No reabre una lectura ya completada ni interpreta automáticamente relecturas.
-- La simulación no guarda la base ni el estado, pero consulta servicios externos y crea/adquiere el archivo de bloqueo.
-- Las búsquedas bibliográficas pueden transmitir título, autor e ISBN a los proveedores. No publiques estado, colas, backups o diagnósticos de usuarios.
-- El panel comparte autenticación/base con Yamtrack; debe permanecer detrás del mismo origen HTTPS y no exponer su puerto directamente.
-- **No requiere el parche de imágenes de Troop Reader.** Esta extensión consulta metadatos e historial, no páginas ni carátulas. Si también utilizas [Troop Reader](https://github.com/raishack/troop-reader), sigue su guía de compatibilidad por separado.
+- It does not sync Kavita bookmarks, files, collections, or notes. It syncs reading progress into Yamtrack book entries.
+- It is not bidirectional. It does not reopen a completed reading or automatically interpret rereads.
+- A dry-run does not persist database or state changes, but it does query external services and creates/acquires the lock file.
+- Bibliographic searches may send title, author, and ISBN to providers. Never publish state, queues, backups, or user diagnostics.
+- The review panel shares Yamtrack authentication and database access. Keep it behind the same HTTPS origin and never expose its port directly.
+- **It does not require Troop Reader's Kavita image patch.** This extension queries metadata and history, not pages or covers. If you also use [Troop Reader](https://github.com/raishack/troop-reader), follow its compatibility guide separately.
 
-## Licencia
+## License
 
-AGPL-3.0-only, coherente con la integración en [Yamtrack](https://github.com/FuzzyGrim/Yamtrack). Consulta [LICENSE](LICENSE) y [NOTICE](NOTICE). No se distribuyen claves, bases de datos, binarios de Yamtrack ni contenido de libros.
+AGPL-3.0-only, consistent with integration into [Yamtrack](https://github.com/FuzzyGrim/Yamtrack). See [LICENSE](LICENSE) and [NOTICE](NOTICE). The project does not distribute API keys, databases, Yamtrack binaries, or book content.

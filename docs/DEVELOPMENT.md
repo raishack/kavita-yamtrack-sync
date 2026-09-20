@@ -1,19 +1,19 @@
-# Desarrollo y pruebas
+# Development and testing
 
-## Arquitectura
+## Architecture
 
-- `core.py`: decisiones de progreso, fechas y proporciones.
-- `http_clients.py`: Kavita/Open Library, autenticación por cabecera, timeouts y reintentos.
-- `matching.py`: identidad bibliográfica, ranking y selección conservadora.
-- `automation.py`: fallback y reconciliación.
-- `state.py`, `locking.py`: persistencia atómica por archivo y exclusión mutua.
-- `observability.py`: salud y errores resumidos.
-- `review_*`, `review.html`: panel Django con sesión compartida y aislamiento por usuario.
-- `deploy/django_management/commands/sync_kavita.py`: orquestación, modelos/proveedores reales y transacciones.
+- `core.py`: progress, date, and proportion decisions.
+- `http_clients.py`: Kavita/Open Library clients, header authentication, timeouts, and retries.
+- `matching.py`: bibliographic identity, ranking, and conservative selection.
+- `automation.py`: fallback and reconciliation.
+- `state.py`, `locking.py`: atomic file persistence and mutual exclusion.
+- `observability.py`: summarized health and errors.
+- `review_*`, `review.html`: Django panel using Yamtrack sessions with per-user isolation.
+- `deploy/django_management/commands/sync_kavita.py`: orchestration, real models/providers, and transactions.
 
-## Pruebas unitarias (sin servicios ni claves)
+## Unit tests (no services or secrets)
 
-Desde la raíz, Python 3.12+:
+From the repository root, with Python 3.12+:
 
 ```sh
 PYTHONPATH=src python -m unittest discover -s tests -v
@@ -21,20 +21,20 @@ python -m pip install ruff==0.15.6
 python -m ruff check .
 ```
 
-Se recomienda un entorno virtual. No se importa Django para las pruebas unitarias. Para ejecutar el comando real se utiliza la imagen Yamtrack, no una instalación arbitraria de Django.
+A virtual environment is recommended. Unit tests do not import Django. The real management command must run inside the validated Yamtrack image, not an arbitrary Django installation.
 
-## Integración real con modelos de Yamtrack
+## Integration with real Yamtrack models
 
-Descarga primero la imagen fijada descrita en [Instalación](INSTALL.md) y ejecuta:
+First pull the pinned image described in [Installation](INSTALL.md), then run:
 
 ```sh
 ./deploy/test-image.sh ghcr.io/fuzzygrim/yamtrack@sha256:78497b454b2b52d3b1062f6fd238351d714cff0895db4369e49ace36f4622e75
 ```
 
-El script fija su ID, ejecuta la suite unitaria y después Django con SQLite en memoria, migraciones originales y proveedores simulados. Usa `--network none`, sin montajes de secretos ni estado real. Verifica `Book.save`, historial, transacciones, colisiones, CSRF, aislamiento, dry-run y reanudación.
+The script resolves and pins the image ID, runs the unit suite, and then starts Django with an in-memory SQLite database, Yamtrack's original migrations, and simulated providers. It uses `--network none` and mounts neither secrets nor production state. It verifies `Book.save`, history, transactions, collisions, CSRF, isolation, dry-run behavior, and resumption.
 
-CI ejecuta ambas suites en cada push/PR con permisos de lectura; no despliega ni publica automáticamente. Las pruebas HTTP simuladas no equivalen a integración en vivo con cada firmware/versión de Kavita.
+CI runs both suites on every push and pull request with read-only permissions. It does not deploy or publish automatically. Simulated HTTP tests are not a substitute for live integration against every Kavita version.
 
-## Contribuir
+## Contributing
 
-Cambios pequeños, pruebas para decisiones que afecten lecturas, sin bases ni credenciales. Conserva el bloqueo de versión y la simulación por defecto. No cambies identidades deterministas o schema sin plan de migración. Antes de publicar, revisa todo el árbol y artefactos y ejecuta un detector de secretos. El checkout público no es el despliegue activo.
+Keep changes small and add tests for decisions that affect readings. Never commit databases or credentials. Preserve strict version guards and dry-run defaults. Do not change deterministic identities or the state schema without a migration plan. Before publishing, inspect the complete tree and artifacts and run a secret scanner. A public checkout is not the active production deployment.

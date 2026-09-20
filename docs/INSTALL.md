@@ -1,16 +1,16 @@
-# Instalación
+# Installation
 
-## 1. Requisitos y backup
+## 1. Requirements and backup
 
-Necesitas una instalación funcional de Yamtrack, Docker Compose, acceso al host y una versión validada de Kavita. Este complemento usa rutas internas de la imagen Yamtrack (`/yamtrack`, `app.management`, `Book.save`): cambiar de imagen requiere pruebas.
+You need a working Yamtrack installation, Docker Compose, host access, and a validated Kavita version. This extension uses internal paths and APIs from the Yamtrack image (`/yamtrack`, `app.management`, and `Book.save`), so changing the image requires testing.
 
-Antes de tocar montajes, detén los procesos que escriben o usa la API de backup de SQLite para obtener una copia coherente. Guarda también Compose, configuración, imagen exacta y estado del conector si ya existía. No copies una SQLite activa sin tratar su WAL.
+Before changing mounts, stop writers or use SQLite's backup API to create a consistent copy. Also preserve Compose files, configuration, the exact image reference, and connector state if it already exists. Never copy a live SQLite database without handling its WAL.
 
-Los ejemplos asumen el stack en `/opt/yamtrack`, contenedor `yamtrack`, servicio Redis `redis`, volumen `./db` y red de proxy `caddy_default`. **Adapta estos nombres a tu stack**; no reemplaces tu Compose existente completo.
+Examples assume a stack at `/opt/yamtrack`, a `yamtrack` container, a Redis service named `redis`, a `./db` volume, and a `caddy_default` proxy network. **Adapt these names to your stack**; do not replace your entire existing Compose file.
 
-## 2. Código e imagen
+## 2. Code and image
 
-Desde el directorio del stack:
+From the stack directory:
 
 ```sh
 git clone https://github.com/raishack/kavita-yamtrack-sync.git
@@ -22,73 +22,73 @@ cd ..
 install -d -m 700 db/kavita-yamtrack-sync
 ```
 
-Fija `YAMTRACK_VALIDATED_IMAGE` en el archivo privado de configuración de Compose al **digest** probado, no `latest`. Este identificador de imagen no es un secreto. Imagen de referencia 0.26.3:
+Set `YAMTRACK_VALIDATED_IMAGE` in your private Compose configuration to the tested **digest**, never `latest`. This image identifier is not a secret. Reference image for Yamtrack 0.26.3:
 
 ```text
 ghcr.io/fuzzygrim/yamtrack@sha256:78497b454b2b52d3b1062f6fd238351d714cff0895db4369e49ace36f4622e75
 ```
 
-Descarga esa imagen y prueba antes de desplegar:
+Pull and test it before deployment:
 
 ```sh
 docker pull ghcr.io/fuzzygrim/yamtrack@sha256:78497b454b2b52d3b1062f6fd238351d714cff0895db4369e49ace36f4622e75
 ./kavita-yamtrack-sync/deploy/test-image.sh ghcr.io/fuzzygrim/yamtrack@sha256:78497b454b2b52d3b1062f6fd238351d714cff0895db4369e49ace36f4622e75
 ```
 
-Los tests usan contenedores desechables sin red y base en memoria, nunca tus volúmenes. Si tu arquitectura no está soportada por el digest, valida una imagen oficial de esa arquitectura antes de continuar.
+Tests use disposable containers, no network, and an in-memory database—never your volumes. If the digest does not support your architecture, validate an official image for that architecture before proceeding.
 
-## 3. Configuración y claves
+## 3. Configuration and API keys
 
-En Kavita, cada lector genera su propia clave API desde sus preferencias. Utiliza el gestor de secretos o editor seguro del host para crear `kavita-yamtrack-sync/secrets/kavita-reader-api-key`. **No la pegues en comandos, URLs, Git, incidencias ni logs**. El archivo debe contener únicamente la clave, ser legible por el usuario que ejecuta el comando dentro del contenedor y tener modo `0600` (o más restrictivo). El conector rechaza permisos de grupo/otros.
+In Kavita, each reader creates their own API key from user preferences. Use your host's secret manager or secure editor to create `kavita-yamtrack-sync/secrets/kavita-reader-api-key`. **Never paste the key into commands, URLs, Git, issues, or logs.** The file must contain only the key, be readable by the user running the command in the container, and use mode `0600` (or stricter). The connector rejects group/other permissions.
 
 ```sh
 chmod 600 kavita-yamtrack-sync/secrets/kavita-reader-api-key
 chmod 600 kavita-yamtrack-sync/config.json
 ```
 
-Edita el JSON: URL HTTPS de Kavita, nombre **exacto** de usuario Yamtrack, ruta interna de la clave y versiones permitidas. No añadas la clave al JSON. Para más usuarios, añade mapeos y montajes individuales. Revisa [Configuración](CONFIGURATION.md).
+Edit the JSON with your Kavita HTTPS URL, the **exact** Yamtrack username, the in-container path to the key file, and explicit allowed versions. Do not put the key itself in JSON. Add separate mappings and mounts for more users. See [Configuration](CONFIGURATION.md).
 
-## 4. Montajes y panel opcional
+## 4. Mounts and optional review panel
 
-Combina [el override de ejemplo](../deploy/docker-compose.override.example.yml) con tu Compose. Los montajes del comando son necesarios; el servicio `yamtrack-kavita-review` y la red Caddy son opcionales si no quieres panel.
+Merge the [example override](../deploy/docker-compose.override.example.yml) into your Compose project. Command mounts are required. The `yamtrack-kavita-review` service and Caddy network are optional if you do not need the review panel.
 
-- El montaje `/yamtrack/app/management` sustituye ese directorio dentro del contenedor: revisa cualquier comando personalizado previo y combínalo antes de usarlo.
-- El comando y el panel deben usar **el mismo digest de Yamtrack**, base, configuración y directorio de estado.
-- El ejemplo carga `.env` en el panel. Debe contener la misma configuración que recibe Yamtrack (`SECRET`, URL/orígenes, base de datos, Redis y proveedores). Si tu stack utiliza otros nombres o secretos de archivo, adapta el servicio. No cambies el secreto de sesión para instalar el panel.
-- No montes las claves Kavita en el panel; solo el comando las necesita. Monta cada secreto por separado.
-- Conserva cookies, orígenes CSRF, cabeceras del proxy y autenticación de Yamtrack. No deshabilites CSRF para arreglar un 403.
-- Comprueba propietarios/UID del volumen: tanto comando como panel necesitan escribir estado y bloqueo. No uses permisos globales `777`.
+- The `/yamtrack/app/management` mount replaces that directory inside the container. Review and merge any existing custom commands before using it.
+- The command and panel must use the **same Yamtrack digest**, database, configuration, and state directory.
+- The example loads `.env` into the panel. It must provide the same settings Yamtrack receives (session `SECRET`, URLs/origins, database, Redis, and providers). Adapt the service if your stack uses different names or file-based secrets. Do not change the session secret to install the panel.
+- Do not mount Kavita API keys into the panel; only the command needs them. Mount each key separately.
+- Preserve Yamtrack cookies, CSRF origins, proxy headers, and authentication. Never disable CSRF to work around a 403.
+- Verify volume ownership and UID. The command and panel both need write access to state and lock files. Never solve this with mode `777`.
 
-Valida la sintaxis **sin volcar valores secretos** y recrea solo los servicios modificados:
+Validate Compose syntax **without dumping secret values**, then recreate only modified services:
 
 ```sh
 docker compose config --quiet
 docker compose up -d yamtrack yamtrack-kavita-review
 ```
 
-Si omites el panel, recrea únicamente `yamtrack`.
+If you omit the panel, recreate only `yamtrack`.
 
-Para Caddy, incorpora [el fragmento](../deploy/Caddyfile.review.snippet) en el mismo sitio HTTPS de Yamtrack, antes del proxy general. La red debe permitir que Caddy resuelva `yamtrack-kavita-review`. No añadas `ports:` al panel. Usa `/kavita-sync/` con barra final y un enlace visible en tu página de entrada si lo deseas; el complemento no modifica la navegación original de Yamtrack.
+For Caddy, add the [provided snippet](../deploy/Caddyfile.review.snippet) to the same HTTPS site as Yamtrack, before the general reverse proxy. The network must allow Caddy to resolve `yamtrack-kavita-review`. Do not add `ports:` to the panel. Keep the trailing slash in `/kavita-sync/`. You may add a visible link from your landing page; the extension does not modify Yamtrack's original navigation.
 
-## 5. Simulación y primera aplicación
+## 5. Dry-run and first apply
 
 ```sh
 docker exec yamtrack python manage.py sync_kavita --config /run/kavita-yamtrack-sync/config.json
 ```
 
-La salida resume decisiones, no una tabla con todas las lecturas. Revisa tus metadatos/overrides y valida primero sobre una copia aislada si necesitas inspeccionar cada asociación. Un resultado sin errores no garantiza que los títulos ambiguos se hayan identificado: revisa contadores `review`, `unmatched` y `manual_fallback`.
+Output summarizes decisions; it is not a table of every reading. Review metadata and overrides, and validate against an isolated copy when you need to inspect every association. A run with no errors does not prove ambiguous titles were identified correctly—review the `review`, `unmatched`, and `manual_fallback` counters.
 
-Tras el backup y la revisión:
+After backup and review:
 
 ```sh
 docker exec yamtrack python manage.py sync_kavita --config /run/kavita-yamtrack-sync/config.json --apply
 ```
 
-Repite para comprobar idempotencia: sin cambios de lectura nuevos no deben duplicarse fichas ni historial. El estado operativo y sus timestamps sí se actualizan. Comprueba notas, valoración, progreso y fechas antes de automatizar.
+Run it again to verify idempotency. With no new reading changes, it must not duplicate entries or history. Operational timestamps may still update. Check notes, ratings, progress, and dates before enabling automation.
 
-## 6. Automatización
+## 6. Automation
 
-Adapta ruta, ejecutable Docker y contenedor de los archivos `deploy/systemd/`. El servicio **incluye `--apply`**: no lo actives antes del piloto.
+Adapt paths, Docker executable, and container names in `deploy/systemd/`. The service **includes `--apply`**; do not enable it before completing the pilot.
 
 ```sh
 sudo install -m 644 kavita-yamtrack-sync/deploy/systemd/yamtrack-kavita-sync.service /etc/systemd/system/
@@ -97,9 +97,9 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now yamtrack-kavita-sync.timer
 ```
 
-Se ejecuta 5 minutos después de finalizar el ciclo anterior, con hasta 30 segundos de desfase. El bloqueo compartido evita solapamientos. No actives además otro cron para la misma configuración. En NAS sin systemd, usa su planificador serializando el mismo comando.
+It runs five minutes after the previous cycle finishes, with up to 30 seconds of jitter. The shared lock prevents overlap. Do not enable another cron job for the same configuration. On a NAS without systemd, use its scheduler while serializing the same command.
 
-## 7. Comprobaciones
+## 7. Verification
 
 ```sh
 sudo systemctl status yamtrack-kavita-sync.timer --no-pager
@@ -109,4 +109,4 @@ curl --fail https://yamtrack.example.org/kavita-sync/health/
 curl --fail https://yamtrack.example.org/kavita-sync/ready/
 ```
 
-El panel no debe tener puertos publicados. Verifica redirección al login como anónimo y separación entre dos cuentas. `ready` puede devolver 503 hasta completar la primera aplicación correcta; `health` solo confirma que responde el proceso.
+The review panel must expose no published ports. Verify anonymous users are redirected to login and that two accounts cannot access one another's queues. `ready` may return 503 until the first successful apply run; `health` only confirms that the process responds.
